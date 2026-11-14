@@ -12,7 +12,17 @@ class Project:
 
     # TODO import project data
 
-    # TODO write project data
+    # write project data
+    def write(self):
+        if not self.project_dir().exists():
+            self.project_dir().mkdir()
+
+        project_path = self.project_dir() / "project.json"
+        with project_path.open("w") as f:
+            f.write('{"name": "{name}", "version": "{version}"}'.format(name = self.name, version = self.version))
+
+    def project_dir(self) -> Path:
+        return projects_dir() / self.name
 
 def projects_dir() -> Path:
     """Return the path to the projects directory"""
@@ -40,3 +50,17 @@ def initialize() -> None:
         dir_path = workspace / dir
         if not dir_path.exists():
             dir_path.mkdir()
+
+
+def create_project() -> None:
+    print("Project name: ")
+    name = input("> ")
+
+    if (projects_dir() / name).exists():
+        print("Project {name} already exists".format(name = name))
+        return
+
+    project = Project(name, "1.0")
+    project.write()
+
+    print("Created project {name}".format(name = name))
