@@ -32,4 +32,4 @@ def help():
     print("  create [project_name]: create a new project")
     print("  manage: Enter interactive management mode")
     print("  list: List projects in current workspace")
-    print("  compile [project_name]: Compile a project in to ready for distribution mod")
+    print("  compile [project_name]: Compile a project in to ready for distribution")
