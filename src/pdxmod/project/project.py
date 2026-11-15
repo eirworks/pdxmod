@@ -18,11 +18,23 @@ class Project:
             self.project_dir().mkdir()
 
         project_path = self.project_dir() / "project.json"
+
         with project_path.open("w") as f:
-            f.write('{"name": "{name}", "version": "{version}"}'.format(name = self.name, version = self.version))
+            f.write(self.to_json())
 
     def project_dir(self) -> Path:
         return projects_dir() / self.name
+
+    def to_dict(self) -> dict:
+        return {
+            "name": self.name,
+            "version": self.version,
+        }
+
+    def to_json(self) -> str:
+        import json
+
+        return json.dumps(self.to_dict())
 
 def projects_dir() -> Path:
     """Return the path to the projects directory"""
@@ -64,3 +76,13 @@ def create_project() -> None:
     project.write()
 
     print("Created project {name}".format(name = name))
+
+def list_projects() -> list[str]:
+    dirs_in_projects_dir = os.listdir(projects_dir())
+
+    projects = []
+    for dir in dirs_in_projects_dir:
+        if os.path.isdir(projects_dir() / dir) and os.path.isfile(projects_dir() / dir / "project.json"):
+            projects.append(dir)
+
+    return projects
