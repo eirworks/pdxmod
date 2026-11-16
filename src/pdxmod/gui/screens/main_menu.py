@@ -4,6 +4,7 @@ from textual.screen import Screen
 from textual.widgets import Button, Footer, Label
 
 from pdxmod.app.app import app_name, app_name_ascii_art
+from pdxmod.gui.screens.create_project_screen import CreateProjectScreen
 
 
 class MainMenuScreen(Screen):
@@ -51,7 +52,8 @@ class MainMenuScreen(Screen):
             yield Label(self.title_text(), id="title")
             yield Button("Create Project", id="create_project", variant="primary")
             yield Button("Load Project", id="load_project")
-        yield Footer()
+            yield Button("Register Mod", id="register_mods")
+        yield Footer(show_command_palette=False)
 
     def title_text(self) -> str:
         """Return the ASCII art when the screen is wide enough, else the plain name."""
@@ -71,15 +73,20 @@ class MainMenuScreen(Screen):
             self.action_create_project()
         elif event.button.id == "load_project":
             self.action_load_project()
+        elif event.button.id == "register_mods":
+            self.action_register_mods()
 
     def action_quit(self) -> None:
         """Exit the application."""
         self.app.exit()
 
     def action_create_project(self) -> None:
-        """Start the create project flow."""
-        pass
+        self.app.push_screen(CreateProjectScreen())
 
     def action_load_project(self) -> None:
         """Start the load project flow."""
+        pass
+
+    def action_register_mods(self) -> None:
+        # TODO open register mods screen
         pass

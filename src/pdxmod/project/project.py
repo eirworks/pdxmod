@@ -3,12 +3,18 @@
 import os
 from pathlib import Path
 
+from pdxmod.pdx.games.ck3 import ck3_game
+from pdxmod.pdx.games.games import ParadoxGames
+
 
 class Project:
 
     def __init__(self, name, version):
+        self.project_id = name.lower().replace(" ", "_")
         self.name = name
         self.version = version
+        self.description = ""
+        self.game = ParadoxGames.CrusaderKings3
 
     # TODO import project data
 
@@ -29,6 +35,8 @@ class Project:
         return {
             "name": self.name,
             "version": self.version,
+            "description": self.description,
+            "game": self.game,
         }
 
     def to_json(self) -> str:
