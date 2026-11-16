@@ -4,7 +4,7 @@ from textual.validation import Length
 from textual.widgets import Button, Footer, Input, Label, Select, TextArea
 
 from pdxmod.pdx.games.games import ParadoxGames, supported_games_as_options
-from pdxmod.project.project import Project, projects_dir
+from pdxmod.project.project import Project
 
 
 class CreateProjectScreen(Screen):
@@ -71,12 +71,11 @@ class CreateProjectScreen(Screen):
         project.game = self.query_one("#game").value
 
         # store project in workspace
-        pdir = projects_dir() / project.project_id
+        pdir = project.project_dir()
         if pdir.exists():
             self.app.notify("Project already exists", title="Error", severity="error")
             return
-        
-        pdir.mkdir()
+
         project.write()
 
         self.app.notify("Project created successfully", title="Success", severity="information")

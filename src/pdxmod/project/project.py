@@ -20,8 +20,7 @@ class Project:
 
     # write project data
     def write(self):
-        if not self.project_dir().exists():
-            self.project_dir().mkdir()
+        self.project_dir().mkdir(parents=True, exist_ok=True)
 
         project_path = self.project_dir() / "project.json"
 
@@ -29,14 +28,17 @@ class Project:
             f.write(self.to_json())
 
     def project_dir(self) -> Path:
-        return projects_dir() / self.name
+        """Return the project data directory, named after the project id."""
+        return projects_dir() / self.project_id
 
     def to_dict(self) -> dict:
+        """Return the project data as a JSON-serializable dictionary."""
         return {
             "name": self.name,
+            "project_id": self.project_id,
             "version": self.version,
             "description": self.description,
-            "game": self.game,
+            "game": self.game.value if isinstance(self.game, ParadoxGames) else self.game,
         }
 
     def to_json(self) -> str:
@@ -73,14 +75,16 @@ def initialize() -> None:
 
 
 def create_project() -> None:
+    """Create a new project by prompting for its name on standard input."""
     print("Project name: ")
     name = input("> ")
 
-    if (projects_dir() / name).exists():
+    project = Project(name, "1.0")
+
+    if project.project_dir().exists():
         print("Project {name} already exists".format(name = name))
         return
 
-    project = Project(name, "1.0")
     project.write()
 
     print("Created project {name}".format(name = name))
