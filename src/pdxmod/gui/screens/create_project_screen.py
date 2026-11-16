@@ -5,7 +5,7 @@ from textual.widgets import Button, Footer, Input, Label, Select, TextArea
 
 from pdxmod.gui.widgets.tag_checkbox_group import TagCheckboxGroup
 from pdxmod.pdx.games.games import ParadoxGames, supported_games_as_options
-from pdxmod.project.project import Project
+from pdxmod.project.project import DEFAULT_GAME_CODE, Project, project_tags
 
 
 class CreateProjectScreen(Screen):
@@ -19,6 +19,8 @@ class CreateProjectScreen(Screen):
     #form { height: 1fr; }
     .input { margin-bottom: 1; }
     .section-label { margin-bottom: 0; }
+    /* TextArea defaults to height: 1fr, which collapses to 0 inside a VerticalScroll. */
+    #description { height: 8; }
     #buttons Button {
         margin: 1 1;
     }
@@ -45,7 +47,7 @@ class CreateProjectScreen(Screen):
                 Length(minimum=1),
             ])
             yield Label("Tags", classes="section-label")
-            yield TagCheckboxGroup(id="tags")
+            yield TagCheckboxGroup(project_tags(DEFAULT_GAME_CODE), id="tags")
         with Horizontal(id="buttons"):
             yield Button("Cancel", id="cancel")
             yield Button("Create Project", id="create_project", variant="primary")
@@ -57,12 +59,28 @@ class CreateProjectScreen(Screen):
         elif event.button.id == "cancel":
             self.action_return()
 
+    async def on_select_changed(self, event: Select.Changed) -> None:
+        """Swap the tag choices to match the newly selected game."""
+        if event.select.id != "game":
+            return
+
+        game_code = event.value if isinstance(event.value, str) else DEFAULT_GAME_CODE
+        tag_group = self.query_one("#tags", TagCheckboxGroup)
+        await tag_group.remove()
+        await self.query_one("#form", VerticalScroll).mount(
+            TagCheckboxGroup(project_tags(game_code), id="tags")
+        )
+
     def action_return(self):
         self.app.pop_screen()
 
+    def selected_game_code(self) -> str:
+        """Return the game code chosen in the game dropdown."""
+        game_value = self.query_one("#game", Select).value
+        return game_value if isinstance(game_value, str) else DEFAULT_GAME_CODE
+
     def validate_form(self) -> bool:
-        game = self.query_one("#game").value
-        if not game:
+        if not self.selected_game_code():
             self.app.notify("Please select a game", title="Error", severity="error")
             return False
         return True
@@ -76,7 +94,7 @@ class CreateProjectScreen(Screen):
 
         project = Project(self.query_one("#project_name", Input).value, version)
         project.description = self.query_one("#description").text
-        project.game = self.query_one("#game").value
+        project.game = self.selected_game_code()
         project.tags = self.query_one("#tags", TagCheckboxGroup).selected_tags()
 
         # store project in workspace

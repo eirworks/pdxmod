@@ -4,44 +4,22 @@ from enum import Enum
 import os
 from pathlib import Path
 
-from pdxmod.pdx.games.ck3 import ck3_game
-from pdxmod.pdx.games.games import ParadoxGames
+from pdxmod.pdx.games.games import ParadoxGames, project_tags_for_game
 
-class ProjectTag(Enum):
-    AlternativeHistory  = "Alternative History"
-    Historical = "Historical"
-    Balance	= "Balance"
-    Map = "Map"
-    Bookmarks = "Bookmarks"
-    Portraits = "Portraits"
-    CharacterFocuses = "Character Focuses"
-    Religion = "Religion"
-    CharacterInteractions = "Character Interactions"
-    Schemes = "Schemes"
-    Culture	= "Culture"
-    Sound = "Sound"
-    Decisions = "Decisions"
-    TotalConversion = "Total Conversion"
-    Events = "Events"
-    Translation = "Translation"
-    Fixes = "Fixes"
-    Utilities = "Utilities"
-    Gameplay = "Gameplay"
-    Warfare = "Warfare"
-    Graphics = "Graphics"
+DEFAULT_GAME_CODE = ParadoxGames.CrusaderKings3.value
+"""Game code used when a project does not specify a game."""
 
-def project_tags() -> list[ProjectTag]:
-    return list(ProjectTag)
+def project_tags(game_code: str = DEFAULT_GAME_CODE) -> list[Enum]:
+    """Return the project tag options registered for the given game code."""
+    return project_tags_for_game(game_code)
 
-def parse_project_tags(values: list[str]) -> list[ProjectTag]:
-    """Convert stored tag values into ProjectTag members, skipping unknown ones."""
+def parse_project_tags(values: list[str], game_code: str = DEFAULT_GAME_CODE) -> list[Enum]:
+    """Convert stored tag values into tag members of the given game, skipping unknown ones."""
+    tags_by_value = {tag.value: tag for tag in project_tags(game_code)}
     tags = []
     for value in values:
-        try:
-            tag = ProjectTag(value)
-        except ValueError:
-            continue
-        if tag not in tags:
+        tag = tags_by_value.get(value)
+        if tag is not None and tag not in tags:
             tags.append(tag)
     return tags
 
@@ -52,7 +30,7 @@ class Project:
         self.name = name
         self.version = version
         self.description = ""
-        self.game = ParadoxGames.CrusaderKings3
+        self.game = DEFAULT_GAME_CODE
         self.tags = []
         self.steam_workshop_id = None
 
@@ -63,8 +41,8 @@ class Project:
         project = cls(name, str(project_data.get("version") or "0.1.0"))
         project.project_id = str(project_data.get("project_id") or project_id or project.project_id)
         project.description = str(project_data.get("description") or "")
-        project.game = project_data.get("game") or ParadoxGames.CrusaderKings3
-        project.tags = parse_project_tags(project_data.get("tags") or [])
+        project.game = project_data.get("game") or DEFAULT_GAME_CODE
+        project.tags = parse_project_tags(project_data.get("tags") or [], project.game_code())
         project.steam_workshop_id = project_data.get("steam_workshop_id")
         return project
 

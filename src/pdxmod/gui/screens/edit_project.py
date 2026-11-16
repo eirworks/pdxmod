@@ -12,6 +12,8 @@ class EditProjectScreen(Screen):
     #form { height: 1fr; }
     .input { margin-bottom: 1; }
     .section-label { margin-bottom: 0; }
+    /* TextArea defaults to height: 1fr, which collapses to 0 inside a VerticalScroll. */
+    #description { height: 8; }
     #buttons {
         height: auto;
         align-horizontal: center;
