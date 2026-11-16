@@ -16,6 +16,26 @@ class Project:
         self.description = ""
         self.game = ParadoxGames.CrusaderKings3
 
+    @classmethod
+    def from_dict(cls, project_data: dict, project_id: str | None = None) -> "Project":
+        """Build a Project from its project.json data, keeping the directory id when given."""
+        name = str(project_data.get("name") or project_id or "")
+        project = cls(name, str(project_data.get("version") or "0.1.0"))
+        project.project_id = str(project_data.get("project_id") or project_id or project.project_id)
+        project.description = str(project_data.get("description") or "")
+        project.game = project_data.get("game") or ParadoxGames.CrusaderKings3
+        return project
+
+    @classmethod
+    def from_json(cls, project_json: str, project_id: str | None = None) -> "Project":
+        """Build a Project from its project.json content."""
+        import json
+
+        project_data = json.loads(project_json)
+        if not isinstance(project_data, dict):
+            raise ValueError("project data must be a JSON object")
+        return cls.from_dict(project_data, project_id)
+
     # TODO import project data
 
     # write project data
@@ -100,7 +120,8 @@ def list_projects() -> list[str]:
     return projects
 
 def load_project(name: str) -> Project:
+    """Read the stored project.json of a project directory into a Project."""
     project_path = projects_dir() / name / "project.json"
     with project_path.open("r") as f:
         project_data = f.read()
-    return Project.from_json(project_data)
+    return Project.from_json(project_data, name)

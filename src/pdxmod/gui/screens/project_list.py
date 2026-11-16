@@ -8,7 +8,7 @@ from textual.containers import Horizontal
 from textual.screen import Screen
 from textual.widgets import Footer, Header, Label, ListItem, ListView
 
-from pdxmod.project.project import list_projects, projects_dir
+from pdxmod.project.project import Project, list_projects, projects_dir
 
 PROJECT_FILE_NAME = "project.json"
 DESCRIPTION_PREVIEW_LENGTH = 90
@@ -62,6 +62,22 @@ def load_project_summaries() -> list[ProjectSummary]:
 
     summaries.sort(key=lambda summary: summary.name.lower())
     return summaries
+
+
+def load_project_summary(summary: ProjectSummary) -> Project | None:
+    """Load the full Project behind a summary, or None when its project.json is unreadable."""
+    project_path = projects_dir() / summary.project_id / PROJECT_FILE_NAME
+
+    try:
+        with project_path.open("r", encoding="utf-8") as project_file:
+            project_data = json.load(project_file)
+    except (OSError, ValueError):
+        return None
+
+    if not isinstance(project_data, dict):
+        return None
+
+    return Project.from_dict(project_data, summary.project_id)
 
 
 def shorten_description(description: str, limit: int = DESCRIPTION_PREVIEW_LENGTH) -> str:
@@ -187,3 +203,23 @@ class ProjectListScreen(Screen):
     def action_return(self) -> None:
         """Return to the previous screen."""
         self.app.pop_screen()
+
+    def on_list_view_selected(self, event: ListView.Selected) -> None:
+        """Open the dashboard of the clicked or selected project."""
+        event.stop()
+
+        item = event.item
+        if not isinstance(item, ProjectListItem):
+            return
+
+        project = load_project_summary(item.summary)
+        if project is None:
+            self.notify(
+                "Could not read project {name}".format(name = item.summary.name),
+                title="Error",
+                severity="error",
+            )
+            return
+
+        self.app.select_project(project)
+        self.app.push_screen("dashboard")
