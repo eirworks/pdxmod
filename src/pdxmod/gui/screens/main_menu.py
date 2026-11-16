@@ -5,6 +5,7 @@ from textual.widgets import Button, Footer, Label
 
 from pdxmod.app.app import app_name, app_name_ascii_art
 from pdxmod.gui.screens.create_project_screen import CreateProjectScreen
+from pdxmod.gui.screens.project_list import ProjectListScreen
 from pdxmod.gui.screens.register_mods import RegisterModsScreen
 
 
@@ -85,8 +86,8 @@ class MainMenuScreen(Screen):
         self.app.push_screen(CreateProjectScreen())
 
     def action_load_project(self) -> None:
-        """Start the load project flow."""
-        pass
+        """Open the list of projects stored in the workspace."""
+        self.app.push_screen(ProjectListScreen())
 
     def action_register_mods(self) -> None:
         self.app.push_screen(RegisterModsScreen())

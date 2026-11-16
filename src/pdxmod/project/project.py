@@ -94,3 +94,9 @@ def list_projects() -> list[str]:
             projects.append(dir)
 
     return projects
+
+def load_project(name: str) -> Project:
+    project_path = projects_dir() / name / "project.json"
+    with project_path.open("r") as f:
+        project_data = f.read()
+    return Project.from_json(project_data)
