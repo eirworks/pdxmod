@@ -5,6 +5,7 @@ from textual.widgets import Button, Footer, Label
 
 from pdxmod.app.app import app_name, app_name_ascii_art
 from pdxmod.gui.screens.create_project_screen import CreateProjectScreen
+from pdxmod.gui.screens.register_mods import RegisterModsScreen
 
 
 class MainMenuScreen(Screen):
@@ -88,5 +89,4 @@ class MainMenuScreen(Screen):
         pass
 
     def action_register_mods(self) -> None:
-        # TODO open register mods screen
-        pass
+        self.app.push_screen(RegisterModsScreen())
