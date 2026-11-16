@@ -3,7 +3,7 @@ from textual.containers import Vertical
 from textual.screen import Screen
 from textual.widgets import Button, Footer, Label
 
-from pdxmod.app.app import app_name, app_name_ascii_art
+from pdxmod.app.app import app_github_repo, app_name, app_name_ascii_art
 from pdxmod.gui.screens.create_project_screen import CreateProjectScreen
 from pdxmod.gui.screens.project_list import ProjectListScreen
 from pdxmod.gui.screens.register_mods import RegisterModsScreen
@@ -16,6 +16,7 @@ class MainMenuScreen(Screen):
         ("q", "quit", "Quit"),
         ("c", "create_project", "Create Project"),
         ("l", "load_project", "Load Project"),
+        ("g", "github", "Github"),
     ]
 
     CSS = """
@@ -91,3 +92,8 @@ class MainMenuScreen(Screen):
 
     def action_register_mods(self) -> None:
         self.app.push_screen(RegisterModsScreen())
+
+    def action_github(self) -> None:
+        import webbrowser
+
+        webbrowser.open(app_github_repo())

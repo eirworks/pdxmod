@@ -9,3 +9,6 @@ def app_name_ascii_art() -> str:
 ██      ██   ██  ██ ██  ██  ██  ██ ██    ██ ██   ██ 
 ██      ██████  ██   ██ ██      ██  ██████  ██████  
 """.strip("\n")
+
+def app_github_repo() -> str:
+    return "https://github.com/eirworks/pdxmod"
