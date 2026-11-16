@@ -2,7 +2,7 @@ from textual.app import App
 from textual.widgets import Label
 
 from pdxmod.gui.screens.create_project_screen import CreateProjectScreen
-from pdxmod.gui.screens.dashboard import Dashboard
+from pdxmod.gui.screens.dashboard import DashboardScreen
 from pdxmod.gui.screens.main_menu import MainMenuScreen
 from pdxmod.project.project import Project
 
@@ -10,7 +10,6 @@ from pdxmod.project.project import Project
 class PdxModApp(App):
     SCREENS = {
         "main_menu": MainMenuScreen,
-        "dashboard": Dashboard,
     }
 
     current_project: Project | None = None

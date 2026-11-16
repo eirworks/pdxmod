@@ -8,6 +8,7 @@ from textual.containers import Horizontal
 from textual.screen import Screen
 from textual.widgets import Footer, Header, Label, ListItem, ListView
 
+from pdxmod.gui.screens.dashboard import DashboardScreen
 from pdxmod.project.project import Project, list_projects, projects_dir
 
 PROJECT_FILE_NAME = "project.json"
@@ -222,4 +223,4 @@ class ProjectListScreen(Screen):
             return
 
         self.app.select_project(project)
-        self.app.push_screen("dashboard")
+        self.app.push_screen(DashboardScreen())
