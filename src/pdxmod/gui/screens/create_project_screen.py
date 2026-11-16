@@ -1,8 +1,9 @@
-from textual.containers import Horizontal
+from textual.containers import Horizontal, VerticalScroll
 from textual.screen import Screen
 from textual.validation import Length
 from textual.widgets import Button, Footer, Input, Label, Select, TextArea
 
+from pdxmod.gui.widgets.tag_checkbox_group import TagCheckboxGroup
 from pdxmod.pdx.games.games import ParadoxGames, supported_games_as_options
 from pdxmod.project.project import Project
 
@@ -15,7 +16,9 @@ class CreateProjectScreen(Screen):
         align: center middle;
     }
     #title { height: 3; text-align: center; width: 100%; margin:1 0; }
+    #form { height: 1fr; }
     .input { margin-bottom: 1; }
+    .section-label { margin-bottom: 0; }
     #buttons Button {
         margin: 1 1;
     }
@@ -32,14 +35,17 @@ class CreateProjectScreen(Screen):
 
     def compose(self):
         yield Label("Create Project", id="title")
-        yield Input(id="project_name", placeholder="Project name", classes="input", validators=[
-            Length(minimum=1),
-        ])
-        yield Select(options=supported_games_as_options(), value=ParadoxGames.CrusaderKings3.value, prompt="Select Game", classes="input", id="game")
-        yield TextArea(placeholder="Description", classes="input", id="description")
-        yield Input(value="0.1.0", classes="input", placeholder="Version", validators=[
-            Length(minimum=1),
-        ])
+        with VerticalScroll(id="form"):
+            yield Input(id="project_name", placeholder="Project name", classes="input", validators=[
+                Length(minimum=1),
+            ])
+            yield Select(options=supported_games_as_options(), value=ParadoxGames.CrusaderKings3.value, prompt="Select Game", classes="input", id="game")
+            yield TextArea(placeholder="Description", classes="input", id="description")
+            yield Input(value="0.1.0", id="version", classes="input", placeholder="Version", validators=[
+                Length(minimum=1),
+            ])
+            yield Label("Tags", classes="section-label")
+            yield TagCheckboxGroup(id="tags")
         with Horizontal(id="buttons"):
             yield Button("Cancel", id="cancel")
             yield Button("Create Project", id="create_project", variant="primary")
@@ -66,9 +72,12 @@ class CreateProjectScreen(Screen):
             self.app.notify("Please fill out all required fields", title="Error", severity="error")
             return
 
-        project = Project(self.query_one("#project_name").value, "0.1.0")
+        version = self.query_one("#version", Input).value.strip() or "0.1.0"
+
+        project = Project(self.query_one("#project_name", Input).value, version)
         project.description = self.query_one("#description").text
         project.game = self.query_one("#game").value
+        project.tags = self.query_one("#tags", TagCheckboxGroup).selected_tags()
 
         # store project in workspace
         pdir = project.project_dir()

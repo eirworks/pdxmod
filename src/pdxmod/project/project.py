@@ -1,11 +1,49 @@
 # Mod Project related information
 
+from enum import Enum
 import os
 from pathlib import Path
 
 from pdxmod.pdx.games.ck3 import ck3_game
 from pdxmod.pdx.games.games import ParadoxGames
 
+class ProjectTag(Enum):
+    AlternativeHistory  = "Alternative History"
+    Historical = "Historical"
+    Balance	= "Balance"
+    Map = "Map"
+    Bookmarks = "Bookmarks"
+    Portraits = "Portraits"
+    CharacterFocuses = "Character Focuses"
+    Religion = "Religion"
+    CharacterInteractions = "Character Interactions"
+    Schemes = "Schemes"
+    Culture	= "Culture"
+    Sound = "Sound"
+    Decisions = "Decisions"
+    TotalConversion = "Total Conversion"
+    Events = "Events"
+    Translation = "Translation"
+    Fixes = "Fixes"
+    Utilities = "Utilities"
+    Gameplay = "Gameplay"
+    Warfare = "Warfare"
+    Graphics = "Graphics"
+
+def project_tags() -> list[ProjectTag]:
+    return list(ProjectTag)
+
+def parse_project_tags(values: list[str]) -> list[ProjectTag]:
+    """Convert stored tag values into ProjectTag members, skipping unknown ones."""
+    tags = []
+    for value in values:
+        try:
+            tag = ProjectTag(value)
+        except ValueError:
+            continue
+        if tag not in tags:
+            tags.append(tag)
+    return tags
 
 class Project:
 
@@ -15,6 +53,8 @@ class Project:
         self.version = version
         self.description = ""
         self.game = ParadoxGames.CrusaderKings3
+        self.tags = []
+        self.steam_workshop_id = None
 
     @classmethod
     def from_dict(cls, project_data: dict, project_id: str | None = None) -> "Project":
@@ -24,6 +64,8 @@ class Project:
         project.project_id = str(project_data.get("project_id") or project_id or project.project_id)
         project.description = str(project_data.get("description") or "")
         project.game = project_data.get("game") or ParadoxGames.CrusaderKings3
+        project.tags = parse_project_tags(project_data.get("tags") or [])
+        project.steam_workshop_id = project_data.get("steam_workshop_id")
         return project
 
     @classmethod
@@ -51,6 +93,10 @@ class Project:
         """Return the project data directory, named after the project id."""
         return projects_dir() / self.project_id
 
+    def game_code(self) -> str:
+        """Return the game code of this project, whether game holds an enum or a code."""
+        return self.game.value if isinstance(self.game, ParadoxGames) else str(self.game)
+
     def to_dict(self) -> dict:
         """Return the project data as a JSON-serializable dictionary."""
         return {
@@ -58,7 +104,9 @@ class Project:
             "project_id": self.project_id,
             "version": self.version,
             "description": self.description,
-            "game": self.game.value if isinstance(self.game, ParadoxGames) else self.game,
+            "game": self.game_code(),
+            "tags": [tag.value for tag in self.tags],
+            "steam_workshop_id": self.steam_workshop_id,
         }
 
     def to_json(self) -> str:
