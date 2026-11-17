@@ -131,6 +131,7 @@ class LocalizationInput(Static):
     def __init__(
         self,
         localization: Localization | None = None,
+        placeholder: str = "",
         *,
         name: str | None = None,
         id: str | None = None,
@@ -140,21 +141,39 @@ class LocalizationInput(Static):
 
         Args:
             localization: Initial localization; defaults to an empty one.
+            placeholder: Muted hint text shown inside the display field while
+                the English localization text is empty (or missing entirely).
             name: Optional widget name.
             id: Optional widget ID.
             classes: Optional CSS classes.
         """
         super().__init__(name=name, id=id, classes=classes)
         self._localization = localization or Localization()
+        self._placeholder = placeholder
 
     def compose(self):
         with Horizontal(id="wrapper"):
             yield Input(
-                value=self._localization.text,
+                value=self._english_text(),
+                placeholder=self._placeholder,
                 id="localization-display",
                 disabled=True,
             )
             yield Button("Edit", id="edit-button", variant="default")
+
+    def _english_text(self) -> str:
+        """Return the English localization text, coercing a missing value to ``""``.
+
+        The returned empty string lets the display field fall back to the muted
+        placeholder instead of showing a stale value.
+        """
+        return self._localization.text or ""
+
+    def _refresh_display(self) -> None:
+        """Sync the display field with the held localization and placeholder."""
+        display = self.query_one("#localization-display", Input)
+        display.value = self._english_text()
+        display.placeholder = self._placeholder
 
     # ── public API ────────────────────────────────────────────────────
 
@@ -168,7 +187,7 @@ class LocalizationInput(Static):
         """Replace the held localization and refresh the display."""
         self._localization = localization
         if self.is_mounted:
-            self.query_one("#localization-display", Input).value = localization.text
+            self._refresh_display()
 
     # ── message handlers ──────────────────────────────────────────────
 
