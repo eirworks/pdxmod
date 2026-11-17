@@ -6,6 +6,7 @@ from textual.screen import Screen
 from textual.widgets import Footer, Header, Label, ListItem, ListView
 
 from pdxmod.gui.features.text_preview import DESCRIPTION_PREVIEW_LENGTH, shorten_description
+from pdxmod.gui.screens.trait.trait_form import TraitFormScreen
 from pdxmod.pdx.trait import Trait, list_traits
 
 EMPTY_TRAITS_MESSAGE = "No traits found in this project."
@@ -107,9 +108,8 @@ class TraitListScreen(Screen):
         yield Footer(show_command_palette=False)
 
     def on_mount(self):
-        """Set the screen title and show the traits found in the project."""
+        """Set the screen title; the rows are loaded once the screen resumes."""
         self.title = "Traits"
-        self.action_refresh()
 
     def action_refresh(self):
         """Reload the traits of the current project and rebuild the list rows."""
@@ -127,9 +127,19 @@ class TraitListScreen(Screen):
         trait_list.display = bool(self.traits)
         self.query_one("#empty", Label).display = not self.traits
 
+    def on_screen_resume(self) -> None:
+        """Reload the list so edits and deletions made in the form are reflected."""
+        self.action_refresh()
+
     def on_list_view_selected(self, event: ListView.Selected) -> None:
-        """Open the selected trait. TODO: not implemented yet."""
-        pass
+        """Open the selected trait in the edit form."""
+        event.stop()
+
+        if isinstance(event.item, TraitListItem):
+            self.app.push_screen(TraitFormScreen(event.item.trait))
 
     def action_return(self):
         self.app.pop_screen()
+
+    def action_add_trait(self):
+        self.app.push_screen(TraitFormScreen())
