@@ -1,9 +1,12 @@
 from enum import Enum
 import json
+from pathlib import Path
 
 
 from pdxmod.pdx.localization import Localization
 from pdxmod.project.project import Project
+
+TRAIT_DIR = "traits"
 
 class TraitCategory(Enum):
     PERSONALITY = "personality"
@@ -118,3 +121,20 @@ def load_trait(project: Project, trait_id: str) -> Trait:
 
     with trait_path.open("r") as f:
         return Trait(json.load(f))
+
+def init_dir(project: Project):
+    """Create a traits directory in the project directory."""
+    project_dir = project.project_dir()
+    traits_dir = project_dir / TRAIT_DIR
+    if traits_dir.exists():
+        return
+    traits_dir.mkdir(exist_ok=True)
+
+
+def list_trait_files(project: Project) -> list[Path]:
+    init_dir(project)
+    traits_dir = project.project_dir() / TRAIT_DIR
+    return [f for f in traits_dir.iterdir() if f.suffix == ".json"]
+
+def list_traits(project: Project) -> list[Trait]:
+    return [Trait.load_trait(project, f.stem) for f in list_trait_files(project)]

@@ -8,11 +8,11 @@ from textual.containers import Horizontal
 from textual.screen import Screen
 from textual.widgets import Footer, Header, Label, ListItem, ListView
 
+from pdxmod.gui.features.text_preview import shorten_description
 from pdxmod.gui.screens.dashboard import DashboardScreen
 from pdxmod.project.project import Project, list_projects, projects_dir
 
 PROJECT_FILE_NAME = "project.json"
-DESCRIPTION_PREVIEW_LENGTH = 90
 EMPTY_LIST_MESSAGE = "No projects found. Create one from the main menu."
 
 
@@ -79,16 +79,6 @@ def load_project_summary(summary: ProjectSummary) -> Project | None:
         return None
 
     return Project.from_dict(project_data, summary.project_id)
-
-
-def shorten_description(description: str, limit: int = DESCRIPTION_PREVIEW_LENGTH) -> str:
-    """Flatten a description to a single line and truncate it to the given limit."""
-    single_line = " ".join(description.split())
-
-    if len(single_line) <= limit:
-        return single_line
-
-    return single_line[: limit - 1].rstrip() + "…"
 
 
 class ProjectListItem(ListItem):

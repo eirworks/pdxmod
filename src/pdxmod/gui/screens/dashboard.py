@@ -7,6 +7,16 @@ from textual.widgets import Footer, Header, Label, ListItem, ListView
 
 from pdxmod.gui.features.menu import DashboardMenu, dashboard_menus
 from pdxmod.gui.screens.edit_project import EditProjectScreen
+from pdxmod.gui.screens.trait.trait_list import TraitListScreen
+
+MENU_SCREENS: dict[str, type[Screen]] = {
+    "traits": TraitListScreen,
+}
+"""Screens opened by a dashboard menu, keyed by :attr:`DashboardMenu.menu_key`.
+
+Screens are instantiated on demand instead of going through ``App.SCREENS``
+so every visit gets a fresh screen and no state leaks across pushes.
+"""
 
 
 class DashboardMenuItem(ListItem):
@@ -91,19 +101,12 @@ class DashboardScreen(Screen):
         """Open the screen registered under the selected menu's key."""
         event.stop()
 
-        item = event.item
-        if not isinstance(item, DashboardMenuItem):
+        if not isinstance(event.item, DashboardMenuItem):
             return
 
-        menu = item.item
-        if menu.menu_key in self.app.SCREENS:
-            self.app.push_screen(menu.menu_key)
-        else:
-            self.notify(
-                "{name} is not available yet.".format(name=menu.name),
-                title="Not available",
-                severity="warning",
-            )
+        screen_class = MENU_SCREENS.get(event.item.item.menu_key)
+        if screen_class is not None:
+            self.app.push_screen(screen_class())
 
     def action_edit(self) -> None:
         self.app.push_screen(EditProjectScreen())
