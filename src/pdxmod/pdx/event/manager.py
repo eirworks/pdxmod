@@ -1,11 +1,20 @@
+import json
 import re
 from pathlib import Path
 
-from pdxmod.pdx.event.event import Event, EventNamespace, load_event_from_json
+from pdxmod.pdx.localization import Localization
+from pdxmod.pdx.event.event import (
+    Event,
+    EventNamespace,
+    event_namespace_from_dict,
+    event_namespace_to_dict,
+    load_event_from_json,
+)
 from pdxmod.project.project import Project
 
 EVENT_DIR = "events"
 EVENT_NAMESPACE_PATTERN = r"^[A-Za-z0-9_]+$"
+NAMESPACE_META_FILE = "_namespace.json"
 
 def initialize_events(project: Project):
     """Check and create events directory."""
@@ -22,8 +31,13 @@ def is_valid_namespace_name(name: str) -> bool:
     """Return whether ``name`` only contains letters, digits and underscores."""
     return bool(re.fullmatch(EVENT_NAMESPACE_PATTERN, name))
 
-def create_event_namespace(project: Project, namespace: str) -> EventNamespace:
-    """Create the ``/events/<namespace>`` directory and return the empty namespace.
+def create_event_namespace(
+    project: Project,
+    namespace: str,
+    title: Localization | None = None,
+    description: Localization | None = None,
+) -> EventNamespace:
+    """Create the ``/events/<namespace>`` directory with its metadata and return the namespace.
 
     Raises:
         ValueError: When the name is empty or contains characters other than
@@ -41,7 +55,26 @@ def create_event_namespace(project: Project, namespace: str) -> EventNamespace:
         raise FileExistsError(f"Namespace '{namespace}' already exists")
 
     directory.mkdir(parents=True)
-    return EventNamespace(namespace)
+    event_namespace = EventNamespace(namespace)
+    event_namespace.title = title or Localization()
+    event_namespace.description = description or Localization()
+    save_event_namespace_meta(project, event_namespace)
+    return event_namespace
+
+def save_event_namespace_meta(project: Project, event_namespace: EventNamespace) -> None:
+    """Write the namespace metadata (title/description) into ``/events/<namespace>/_namespace.json``."""
+    meta_file = namespace_dir(project, event_namespace.namespace) / NAMESPACE_META_FILE
+    with meta_file.open("w") as f:
+        f.write(json.dumps(event_namespace_to_dict(event_namespace)))
+
+def load_event_namespace_meta(project: Project, namespace: str) -> EventNamespace:
+    """Read the namespace metadata file, falling back to an empty namespace when it is absent."""
+    meta_file = namespace_dir(project, namespace) / NAMESPACE_META_FILE
+    if not meta_file.exists():
+        return EventNamespace(namespace)
+
+    with meta_file.open("r") as f:
+        return event_namespace_from_dict(json.load(f), namespace)
 
 def load_event(project: Project, namespace: str, event_id: str) -> Event:
     """Read ``/events/<namespace>/<event_id>.json`` of the project and build an event from it.
@@ -58,11 +91,14 @@ def load_event(project: Project, namespace: str, event_id: str) -> Event:
     return load_event_from_json(json_raw)
 
 def list_event_files(project: Project, namespace: str) -> list[Path]:
-    """List every event JSON file stored in one namespace directory."""
+    """List every event JSON file stored in one namespace directory, excluding metadata files."""
     directory = namespace_dir(project, namespace)
     if not directory.exists():
         return []
-    return sorted((f for f in directory.iterdir() if f.suffix == ".json"), key=lambda f: f.name)
+    return sorted(
+        (f for f in directory.iterdir() if f.suffix == ".json" and f.name != NAMESPACE_META_FILE),
+        key=lambda f: f.name,
+    )
 
 def list_namespace_names(project: Project) -> list[str]:
     """List the names of every event namespace directory stored in the project."""
@@ -71,8 +107,8 @@ def list_namespace_names(project: Project) -> list[str]:
     return sorted(p.name for p in event_dir.iterdir() if p.is_dir())
 
 def load_event_namespace(project: Project, namespace: str) -> EventNamespace:
-    """Load one namespace together with every event stored inside it."""
-    event_namespace = EventNamespace(namespace)
+    """Load one namespace with its metadata and every event stored inside it."""
+    event_namespace = load_event_namespace_meta(project, namespace)
     event_namespace.events = [
         load_event(project, namespace, event_file.stem)
         for event_file in list_event_files(project, namespace)

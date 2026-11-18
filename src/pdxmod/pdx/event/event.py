@@ -4,8 +4,35 @@ import json
 from pdxmod.pdx.gfx.animation import CharacterAnimation
 from pdxmod.pdx.localization import Localization
 from pdxmod.pdx.scripted_modifier import AIChance
-from pdxmod.pdx.trait import enum_from_value, localization_from_dict
+from pdxmod.pdx.trait import enum_from_value, localization_from_dict, localization_to_dict
 from pdxmod.pdx.skill import Skill
+
+EVENT_ID_MAX = 9999
+EVENT_ID_DIGITS = 4
+
+def normalize_event_id(value: str | int) -> str:
+    """Convert an event id into a zero-padded string of ``EVENT_ID_DIGITS`` characters.
+
+    Args:
+        value: Event id as an integer or a string containing an integer, e.g. ``1`` or ``"12"``.
+
+    Returns:
+        The event id padded with leading zeros, e.g. ``1`` -> ``"0001"``.
+
+    Raises:
+        ValueError: When the value is not an integer or exceeds ``EVENT_ID_MAX``.
+    """
+    try:
+        event_id = int(str(value).strip())
+    except (TypeError, ValueError):
+        raise ValueError(f"Event id '{value}' is not an integer") from None
+
+    if event_id < 0:
+        raise ValueError(f"Event id {event_id} cannot be negative")
+    if event_id > EVENT_ID_MAX:
+        raise ValueError(f"Event id {event_id} exceeds the maximum event id {EVENT_ID_MAX}")
+
+    return str(event_id).zfill(EVENT_ID_DIGITS)
 
 class EventType(Enum):
     CharacterEvent = "character_event"
@@ -104,6 +131,7 @@ class PortraitCharacter:
 
 
 class Event:
+    event_id: str
     theme: EventTheme
     options: list[EventOption]
 
@@ -116,7 +144,7 @@ class Event:
     sender: PortraitCharacter
 
     def __init__(self):
-        self.event_id = 0
+        self.event_id = "1" # between 0001 and 9999
 
         self.title = Localization()
         self.description = Localization()
@@ -145,13 +173,47 @@ class Event:
 
         self.options = []
 
+    @property
+    def event_id(self) -> str:
+        """The event id as a zero-padded string, e.g. ``"0001"``."""
+        return self._event_id
+
+    @event_id.setter
+    def event_id(self, value: str | int) -> None:
+        """Store the event id padded with leading zeros, e.g. ``12`` -> ``"0012"``.
+
+        Raises:
+            ValueError: When the value is not an integer or exceeds ``EVENT_ID_MAX``.
+        """
+        self._event_id = normalize_event_id(value)
+
 class EventNamespace:
     namespace: str
+    title: Localization
+    description: Localization
     events: list[Event]
 
     def __init__(self, name: str):
         self.namespace = name
+        self.title = Localization()
+        self.description = Localization()
         self.events = []
+
+def event_namespace_from_dict(data: dict | None, namespace: str) -> EventNamespace:
+    """Rebuild an EventNamespace metadata (title/description) from its stored JSON dictionary."""
+    data = data or {}
+    event_namespace = EventNamespace(namespace)
+    event_namespace.title = localization_from_dict(data.get("title"))
+    event_namespace.description = localization_from_dict(data.get("description"))
+    return event_namespace
+
+def event_namespace_to_dict(event_namespace: EventNamespace) -> dict:
+    """Return the EventNamespace metadata (title/description) as a JSON-serializable dictionary."""
+    return {
+        "namespace": event_namespace.namespace,
+        "title": localization_to_dict(event_namespace.title),
+        "description": localization_to_dict(event_namespace.description),
+    }
 
 
         
@@ -192,7 +254,7 @@ def event_from_dict(data: dict) -> Event:
         raise ValueError("Event data is missing required field 'event_id'")
 
     ev = Event()
-    ev.event_id = int(event_id)
+    ev.event_id = event_id
     ev.title = localization_from_dict(data.get("title"))
     ev.description = localization_from_dict(data.get("description"))
     ev.opening = localization_from_dict(data.get("opening"))

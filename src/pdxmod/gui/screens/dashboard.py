@@ -7,7 +7,7 @@ from textual.widgets import Button, Footer, Header, Label, ListItem, ListView, R
 
 from pdxmod.gui.features.menu import DashboardMenu, dashboard_menus
 from pdxmod.gui.screens.edit_project import EditProjectScreen
-from pdxmod.gui.screens.events.event_list import EventListScreen
+from pdxmod.gui.screens.events.event_ns_list import EventListScreen
 from pdxmod.gui.screens.trait.trait_list import TraitListScreen
 
 MENU_SCREENS: dict[str, type[Screen]] = {

@@ -1,4 +1,4 @@
-"""Screen that lists every event stored in the current project, grouped by namespace."""
+"""Screen that lists every event namespace stored in the current project."""
 
 from rich.text import Text
 from textual.app import ComposeResult
@@ -7,7 +7,7 @@ from textual.widgets import Footer, Header, Label, OptionList
 from textual.widgets.option_list import Option
 
 from pdxmod.gui.screens.events.namespace_form import NamespaceFormModal
-from pdxmod.pdx.event.event import Event, EventNamespace
+from pdxmod.pdx.event.event import EventNamespace
 from pdxmod.pdx.event.manager import (
     create_event_namespace,
     list_event_namespaces,
@@ -31,7 +31,6 @@ class EventListScreen(Screen):
     BINDINGS = [
         ("escape", "return", "Dashboard"),
         ("n", "create_namespace", "New Namespace"),
-        ("e", "create_event", "New Event"),
         ("r", "refresh", "Refresh"),
     ]
 
@@ -48,31 +47,29 @@ class EventListScreen(Screen):
         self.refresh_events()
 
     def refresh_events(self) -> None:
-        """Reload the namespaces from the project and rebuild their grouped entries."""
+        """Reload the namespaces from the project and rebuild their entries."""
         project = self.app.current_project
         namespaces = list_event_namespaces(project) if project else []
 
         event_list = self.query_one("#events", OptionList)
         event_list.clear_options()
-        for namespace in namespaces:
-            event_list.add_option(self.namespace_option(namespace))
-            event_list.add_options([
-                self.event_option(namespace, event) for event in namespace.events
-            ])
+        event_list.add_options([self.namespace_option(namespace) for namespace in namespaces])
 
         event_list.display = bool(namespaces)
         self.query_one("#empty", Label).display = not namespaces
 
     def namespace_option(self, namespace: EventNamespace) -> Option:
-        """Format a disabled header option showing a namespace and its event count."""
+        """Format a selectable option showing a namespace (title first when set) and its event count."""
         count = len(namespace.events)
         plural = "" if count == 1 else "s"
-        label = Text(f"─── {namespace.namespace} ({count} event{plural}) ───", style="bold")
-        return Option(label, id=f"namespace:{namespace.namespace}", disabled=True)
+        name = namespace.title.text or namespace.namespace
+        label = Text(f"{name} ({count} event{plural})")
+        return Option(label, id=f"namespace:{namespace.namespace}")
 
-    def event_option(self, namespace: EventNamespace, event: Event) -> Option:
-        """Format a selectable entry for one event inside its namespace."""
-        return Option(f"  {event.title.text}", id=f"event:{namespace.namespace}:{event.event_id}")
+    def on_option_list_option_selected(self, event: OptionList.OptionSelected) -> None:
+        """Open the selected namespace; not implemented yet."""
+        event.stop()
+        pass
 
     def action_refresh(self) -> None:
         """Reload the list of events."""
@@ -94,9 +91,9 @@ class EventListScreen(Screen):
             self._on_namespace_form_dismissed,
         )
 
-    def _on_namespace_form_dismissed(self, namespace: str | None) -> None:
+    def _on_namespace_form_dismissed(self, event_namespace: EventNamespace | None) -> None:
         """Create the namespace returned by the modal and refresh the list."""
-        if namespace is None:
+        if event_namespace is None:
             return
 
         project = self.app.current_project
@@ -104,12 +101,17 @@ class EventListScreen(Screen):
             return
 
         try:
-            create_event_namespace(project, namespace)
+            create_event_namespace(
+                project,
+                event_namespace.namespace,
+                event_namespace.title,
+                event_namespace.description,
+            )
         except (ValueError, FileExistsError) as error:
             self.notify(str(error), severity="error")
             return
 
-        self.notify(f"Namespace '{namespace}' created")
+        self.notify(f"Namespace '{event_namespace.namespace}' created")
         self.refresh_events()
 
     def action_create_event(self) -> None:

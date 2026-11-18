@@ -1,4 +1,4 @@
-"""Modal form that asks for the name of a new event namespace."""
+"""Modal form that asks for a new event namespace, its title and its description."""
 
 from textual.app import ComposeResult
 from textual.containers import Horizontal
@@ -6,18 +6,28 @@ from textual.screen import ModalScreen
 from textual.validation import Regex
 from textual.widgets import Button, Input, Label, Static
 
+from pdxmod.pdx.event.event import EventNamespace
 from pdxmod.pdx.event.manager import EVENT_NAMESPACE_PATTERN
+from pdxmod.pdx.localization import Localization, LocalizationItem, SupportedLocale
 
 INVALID_NAMESPACE_MESSAGE = "Only letters, digits and underscores are allowed"
 
 
-class NamespaceFormModal(ModalScreen[str | None]):
-    """Modal dialog collecting one event namespace name.
+def localization_from_text(text: str) -> Localization:
+    """Build an English-only Localization from raw text, or an empty one when blank."""
+    localization = Localization()
+    if text:
+        localization.items.append(LocalizationItem(SupportedLocale.English, text))
+    return localization
 
-    The dialog closes with the entered name when the user confirms, or with
-    ``None`` when it is cancelled. Names that are already present in
-    ``existing_namespaces`` are rejected so the form can be reused before
-    anything is written to the project.
+
+class NamespaceFormModal(ModalScreen[EventNamespace | None]):
+    """Modal dialog collecting one event namespace name, title and description.
+
+    The dialog closes with an EventNamespace (title/description filled) when the
+    user confirms, or with ``None`` when it is cancelled. Names that are already
+    present in ``existing_namespaces`` are rejected so the form can be reused
+    before anything is written to the project.
     """
 
     DEFAULT_CSS = """
@@ -33,7 +43,7 @@ class NamespaceFormModal(ModalScreen[str | None]):
         background: $surface;
     }
 
-    NamespaceFormModal #title {
+    NamespaceFormModal #header {
         text-style: bold;
         margin-bottom: 1;
     }
@@ -44,6 +54,14 @@ class NamespaceFormModal(ModalScreen[str | None]):
     }
 
     NamespaceFormModal #namespace {
+        margin-bottom: 1;
+    }
+
+    NamespaceFormModal #title {
+        margin-bottom: 1;
+    }
+
+    NamespaceFormModal #description {
         margin-bottom: 1;
     }
 
@@ -70,15 +88,17 @@ class NamespaceFormModal(ModalScreen[str | None]):
         self._existing_namespaces = existing_namespaces or set()
 
     def compose(self) -> ComposeResult:
-        """Build the name field and the cancel/create button row."""
+        """Build the namespace, title and description fields plus the button row."""
         with Static(id="dialog"):
-            yield Label("New Event Namespace", id="title")
+            yield Label("New Event Namespace", id="header")
             yield Label(INVALID_NAMESPACE_MESSAGE, id="hint", markup=False)
             yield Input(
                 placeholder="Namespace",
                 id="namespace",
                 validators=[Regex(EVENT_NAMESPACE_PATTERN, failure_description=INVALID_NAMESPACE_MESSAGE)],
             )
+            yield Input(placeholder="Title (optional)", id="title")
+            yield Input(placeholder="Description (optional)", id="description")
             with Horizontal(id="buttons"):
                 yield Button("Cancel", id="cancel", variant="default")
                 yield Button("Create", id="create", variant="primary")
@@ -101,7 +121,7 @@ class NamespaceFormModal(ModalScreen[str | None]):
             self.action_save()
 
     def action_save(self) -> None:
-        """Validate the name and dismiss with it when it can be created."""
+        """Validate the namespace and dismiss with it (plus optional title/description)."""
         namespace_input = self.query_one("#namespace", Input)
         namespace = namespace_input.value.strip()
         namespace_input.value = namespace
@@ -121,7 +141,13 @@ class NamespaceFormModal(ModalScreen[str | None]):
             namespace_input.focus()
             return
 
-        self.dismiss(namespace)
+        title = self.query_one("#title", Input).value.strip()
+        description = self.query_one("#description", Input).value.strip()
+
+        event_namespace = EventNamespace(namespace)
+        event_namespace.title = localization_from_text(title)
+        event_namespace.description = localization_from_text(description)
+        self.dismiss(event_namespace)
 
     def action_cancel(self) -> None:
         """Dismiss the modal without creating a namespace."""
