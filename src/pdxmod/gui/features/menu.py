@@ -24,6 +24,11 @@ def dashboard_menus() -> list[DashboardMenu]:
             description="Menu when interacting with a character",
         ),
         DashboardMenu(
+            menu_key="events",
+            name="Events",
+            description="Backbone of the most of Paradox game",
+        ),
+        DashboardMenu(
             menu_key="resources",
             name="Resources",
             description="Manage resources likes graphics, icons, animation, and others.",
