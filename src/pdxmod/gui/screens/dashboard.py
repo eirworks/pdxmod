@@ -1,9 +1,9 @@
 """Dashboard screen listing the modding menus of the current project."""
 
 from textual.app import ComposeResult
-from textual.containers import Vertical
+from textual.containers import Horizontal, Vertical
 from textual.screen import Screen
-from textual.widgets import Footer, Header, Label, ListItem, ListView
+from textual.widgets import Button, Footer, Header, Label, ListItem, ListView, Rule
 
 from pdxmod.gui.features.menu import DashboardMenu, dashboard_menus
 from pdxmod.gui.screens.edit_project import EditProjectScreen
@@ -70,6 +70,31 @@ class DashboardMenuItem(ListItem):
             yield Label(self.item.description, classes="menu-description")
 
 
+class DashboardMenuSeparator(ListItem):
+    """Non-selectable divider row rendered for entries with ``separator=True``.
+
+    The row is created disabled so ``ListView`` cursor movement skips it
+    entirely; it only exists to visually break the menu into groups.
+    """
+
+    DEFAULT_CSS = """
+    DashboardMenuSeparator {
+        height: 1;
+        padding: 0 1;
+        margin-bottom: 1;
+        opacity: 1;
+    }
+    """
+
+    def __init__(self) -> None:
+        """Create a disabled divider that can never be highlighted."""
+        super().__init__(disabled=True)
+
+    def compose(self) -> ComposeResult:
+        """Build the horizontal rule shown as the divider line."""
+        yield Rule(line_style="heavy")
+
+
 class DashboardScreen(Screen):
     """Landing screen of a project with the list of modding menus."""
 
@@ -83,19 +108,23 @@ class DashboardScreen(Screen):
     BINDINGS = [
         ("q", "quit", "Quit"),
         ("e", "edit", "Edit"),
+        ("i", "info", "Info"),
     ]
 
     def compose(self) -> ComposeResult:
         yield Header()
         with ListView(id="menus"):
             for menu in dashboard_menus():
-                yield DashboardMenuItem(menu)
+                if menu.separator:
+                    yield DashboardMenuSeparator()
+                else:
+                    yield DashboardMenuItem(menu)
         yield Footer(show_command_palette=False)
 
     def on_mount(self) -> None:
         self.title = "Dashboard"
         current_project = self.app.current_project
-        self.sub_title = current_project.name if current_project is not None else "No project selected"
+        self.sub_title = f"{current_project.name} - {current_project.version}" if current_project is not None else "No project selected"
 
     def on_list_view_selected(self, event: ListView.Selected) -> None:
         """Open the screen registered under the selected menu's key."""

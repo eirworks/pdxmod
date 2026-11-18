@@ -23,4 +23,17 @@ def dashboard_menus() -> list[DashboardMenu]:
             name="Character Interaction",
             description="Menu when interacting with a character",
         ),
+        DashboardMenu(
+            menu_key="resources",
+            name="Resources",
+            description="Manage resources likes graphics, icons, animation, and others.",
+        ),
+        DashboardMenu(
+            separator = True
+        ),
+        DashboardMenu(
+            menu_key="compile",
+            name="COMPILE",
+            description="Compile the project into the mod",
+        ),
     ]
