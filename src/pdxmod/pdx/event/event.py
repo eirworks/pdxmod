@@ -10,6 +10,30 @@ from pdxmod.pdx.skill import Skill
 EVENT_ID_MAX = 9999
 EVENT_ID_DIGITS = 4
 
+def parse_event_id(value: str | int) -> int:
+    """Validate an event id and return it as an integer.
+
+    Args:
+        value: Event id as an integer or a string containing an integer, e.g. ``1`` or ``"12"``.
+
+    Returns:
+        The event id as an integer, e.g. ``"0012"`` -> ``12``.
+
+    Raises:
+        ValueError: When the value is not an integer, is negative, or exceeds ``EVENT_ID_MAX``.
+    """
+    try:
+        event_id = int(str(value).strip())
+    except (TypeError, ValueError):
+        raise ValueError(f"Event id '{value}' is not an integer") from None
+
+    if event_id < 0:
+        raise ValueError(f"Event id {event_id} cannot be negative")
+    if event_id > EVENT_ID_MAX:
+        raise ValueError(f"Event id {event_id} exceeds the maximum event id {EVENT_ID_MAX}")
+
+    return event_id
+
 def normalize_event_id(value: str | int) -> str:
     """Convert an event id into a zero-padded string of ``EVENT_ID_DIGITS`` characters.
 
@@ -22,17 +46,7 @@ def normalize_event_id(value: str | int) -> str:
     Raises:
         ValueError: When the value is not an integer or exceeds ``EVENT_ID_MAX``.
     """
-    try:
-        event_id = int(str(value).strip())
-    except (TypeError, ValueError):
-        raise ValueError(f"Event id '{value}' is not an integer") from None
-
-    if event_id < 0:
-        raise ValueError(f"Event id {event_id} cannot be negative")
-    if event_id > EVENT_ID_MAX:
-        raise ValueError(f"Event id {event_id} exceeds the maximum event id {EVENT_ID_MAX}")
-
-    return str(event_id).zfill(EVENT_ID_DIGITS)
+    return str(parse_event_id(value)).zfill(EVENT_ID_DIGITS)
 
 class EventType(Enum):
     CharacterEvent = "character_event"
@@ -131,7 +145,7 @@ class PortraitCharacter:
 
 
 class Event:
-    event_id: str
+    event_id: int
     theme: EventTheme
     options: list[EventOption]
 
@@ -144,7 +158,7 @@ class Event:
     sender: PortraitCharacter
 
     def __init__(self):
-        self.event_id = "1" # between 0001 and 9999
+        self.event_id = 1 # between 1 and 9999
 
         self.title = Localization()
         self.description = Localization()
@@ -174,18 +188,23 @@ class Event:
         self.options = []
 
     @property
-    def event_id(self) -> str:
-        """The event id as a zero-padded string, e.g. ``"0001"``."""
+    def event_id(self) -> int:
+        """The event id as an integer, e.g. ``1``."""
         return self._event_id
 
     @event_id.setter
     def event_id(self, value: str | int) -> None:
-        """Store the event id padded with leading zeros, e.g. ``12`` -> ``"0012"``.
+        """Store the event id as an integer, e.g. ``"0012"`` -> ``12``.
 
         Raises:
-            ValueError: When the value is not an integer or exceeds ``EVENT_ID_MAX``.
+            ValueError: When the value is not an integer, is negative, or exceeds ``EVENT_ID_MAX``.
         """
-        self._event_id = normalize_event_id(value)
+        self._event_id = parse_event_id(value)
+
+    @property
+    def event_id_padded(self) -> str:
+        """The event id as a zero-padded string of ``EVENT_ID_DIGITS`` characters, e.g. ``91`` -> ``"0091"``."""
+        return normalize_event_id(self._event_id)
 
 class EventNamespace:
     namespace: str
