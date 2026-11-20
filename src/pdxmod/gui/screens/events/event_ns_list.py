@@ -43,7 +43,7 @@ class EventListScreen(Screen):
 
     def on_mount(self) -> None:
         """Set the screen title and show the event namespaces found in the project."""
-        self.title = "Events"
+        self.title = "Events (Namespaces)"
         self.refresh_events()
 
     def refresh_events(self) -> None:

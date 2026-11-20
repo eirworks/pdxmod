@@ -8,6 +8,7 @@ from textual.widgets import Button, Footer, Header, Label, ListItem, ListView, R
 from pdxmod.gui.features.menu import DashboardMenu, dashboard_menus
 from pdxmod.gui.screens.edit_project import EditProjectScreen
 from pdxmod.gui.screens.events.event_ns_list import EventListScreen
+from pdxmod.gui.screens.project_info import ProjectInfoScreen
 from pdxmod.gui.screens.trait.trait_list import TraitListScreen
 
 MENU_SCREENS: dict[str, type[Screen]] = {
@@ -144,3 +145,6 @@ class DashboardScreen(Screen):
 
     def action_quit(self) -> None:
         self.app.pop_screen()
+
+    def action_info(self):
+        self.app.push_screen(ProjectInfoScreen())
