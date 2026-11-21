@@ -1,5 +1,7 @@
+from dataclasses import dataclass, field
 from enum import Enum
 import json
+from typing import Any
 
 from pdxmod.pdx.gfx.animation import CharacterAnimation
 from pdxmod.pdx.localization import Localization
@@ -116,107 +118,72 @@ class EventTheme(Enum):
     memory_stress = "memory_stress"
     memory_formative = "memory_formative"
 
+@dataclass
 class EventOption:
+    option_id: str # key for name, used as localization
+    name: Localization = field(default_factory=Localization)
+    effect: Any = None # TODO figure with inline Effect
+    trigger: Any = None # TODO figure with trigger block
+    skill: Skill | None = None
+    trait: str | None = None # for now it is trait ID
+    is_cancel_option: bool = False
+    fallback: bool = False
+    exclusive: bool = False
+    ai_chance: AIChance = field(default_factory=AIChance) # ai chance
 
-    skill : Skill
-    trait: str # for now it is trait ID
-
-    def __init__(self, option_id: str):
-        self.option_id = option_id # key for name, used as localization
-        self.name = Localization()
-
-        self.effect = None # TODO figure with inline Effect
-        self.trigger = None # TODO figure with trigger block
-
-        self.skill = None
-        self.trait = None
-
-        self.is_cancel_option = False
-        self.fallback = False
-        self.exclusive = False
-
-        self.ai_chance = AIChance() # ai chance
-
+@dataclass
 class PortraitCharacter:
-    animation : CharacterAnimation
-    def __init__(self):
-        self.character = "" # scope
-        self.animation = CharacterAnimation.Idle
+    character: str = "" # scope
+    animation: CharacterAnimation = CharacterAnimation.Idle
 
 
+@dataclass
 class Event:
-    event_id: int
-    theme: EventTheme
-    options: list[EventOption]
+    event_id: int = 1 # between 1 and 9999
+    title: Localization = field(default_factory=Localization)
+    description: Localization = field(default_factory=Localization)
+    opening: Localization = field(default_factory=Localization) # for letter event
 
-    left_portrait: PortraitCharacter
-    right_portrait: PortraitCharacter
-    center_portrait: PortraitCharacter
-    lower_left_portrait: PortraitCharacter
-    lower_center_portrait: PortraitCharacter
-    lower_right_portrait: PortraitCharacter
-    sender: PortraitCharacter
+    type: EventType = EventType.CharacterEvent
+    theme: EventTheme | None = None
 
-    def __init__(self):
-        self.event_id = 1 # between 1 and 9999
+    trigger: Any = None
+    immediate: Any = None
+    after: Any = None
+    hidden: bool = False
 
-        self.title = Localization()
-        self.description = Localization()
-        self.opening = Localization() # for letter event
+    content_source: str | None = None # DLC
 
-        self.type = EventType.CharacterEvent
+    # portraits
+    left_portrait: PortraitCharacter | None = None
+    right_portrait: PortraitCharacter | None = None
+    center_portrait: PortraitCharacter | None = None
+    lower_left_portrait: PortraitCharacter | None = None
+    lower_center_portrait: PortraitCharacter | None = None
+    lower_right_portrait: PortraitCharacter | None = None
+    sender: PortraitCharacter | None = None # only for type=letter_event
 
-        self.theme = None
+    options: list[EventOption] = field(default_factory=list)
 
-        self.trigger = None
-        self.immediate = None
-        self.after = None
-        self.hidden = False
-
-        self.content_source = None # DLC
-
-        # portraits
-        self.left_portrait = None
-        self.right_portrait = None
-        self.center_portrait = None
-        self.lower_left_portrait = None
-        self.lower_center_portrait = None
-        self.lower_right_portrait = None
-        self.sender = None # only for type=letter_event
-
-
-        self.options = []
-
-    @property
-    def event_id(self) -> int:
-        """The event id as an integer, e.g. ``1``."""
-        return self._event_id
-
-    @event_id.setter
-    def event_id(self, value: str | int) -> None:
-        """Store the event id as an integer, e.g. ``"0012"`` -> ``12``.
+    def __post_init__(self) -> None:
+        """Validate the event id, e.g. ``"0012"`` -> ``12``.
 
         Raises:
-            ValueError: When the value is not an integer, is negative, or exceeds ``EVENT_ID_MAX``.
+            ValueError: When the event id is not an integer, is negative, or exceeds ``EVENT_ID_MAX``.
         """
-        self._event_id = parse_event_id(value)
+        self.event_id = parse_event_id(self.event_id)
 
     @property
     def event_id_padded(self) -> str:
         """The event id as a zero-padded string of ``EVENT_ID_DIGITS`` characters, e.g. ``91`` -> ``"0091"``."""
-        return normalize_event_id(self._event_id)
+        return normalize_event_id(self.event_id)
 
+@dataclass
 class EventNamespace:
     namespace: str
-    title: Localization
-    description: Localization
-    events: list[Event]
-
-    def __init__(self, name: str):
-        self.namespace = name
-        self.title = Localization()
-        self.description = Localization()
-        self.events = []
+    title: Localization = field(default_factory=Localization)
+    description: Localization = field(default_factory=Localization)
+    events: list[Event] = field(default_factory=list)
 
 def event_namespace_from_dict(data: dict | None, namespace: str) -> EventNamespace:
     """Rebuild an EventNamespace metadata (title/description) from its stored JSON dictionary."""
@@ -272,8 +239,7 @@ def event_from_dict(data: dict) -> Event:
     if event_id is None:
         raise ValueError("Event data is missing required field 'event_id'")
 
-    ev = Event()
-    ev.event_id = event_id
+    ev = Event(event_id=event_id)
     ev.title = localization_from_dict(data.get("title"))
     ev.description = localization_from_dict(data.get("description"))
     ev.opening = localization_from_dict(data.get("opening"))
